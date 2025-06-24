@@ -193,7 +193,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-    // 思路：全部去反，然后末位加 1，之后变成的数与 -x 的补码
+    // 思路：全部取反，然后末位加 1，之后变成的数与 -x 的补码
     return ((~x) + 1);
 }
 // 3
@@ -207,7 +207,13 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-    return 2;
+    // 思路：0x0000003y, 其中 y ∈ [0,9] 时为 1
+    // 那么只需确定 x 前 28 为 0x00000030 并且后四位是 [0,9] 的范围
+    // x & 0x0000000f - 10，如果小于 0，那么确定第二个条件
+    // x & 0xfffffff0 得到前 28 位，如果等于 0x00000030，那么确定第一个条件
+    // - 10 可以用 +(-10), 判断小于 0 只需要判断第 31 位是否 1(即判断 & 0x80000000 是否等于 0x80000000)
+    // 条件 1 和 条件 2 同时确定返回 1
+    return (!((((x & 0x0000000f) + ((~0x0000000a) + 1)) & 0x80000000) ^ 0x80000000)) & (!((x & 0xfffffff0) ^ 0x00000030));
 }
 /*
  * conditional - same as x ? y : z
@@ -217,7 +223,20 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-    return 2;
+    // 思路：x == 0, 返回 z; x != 0, 返回 y
+    // 很容易想到 0 & y + 0xffffffff & z == z, 0 & z + 0xffffffff & y == y
+    // F & y + F' & z
+    // 也就是说我们希望找到一种属于 x 的表达式 F 和 F'，使 F,F' 满足：
+    // x == 0 时，F == 0, F' = 0xffffffff
+    // x != 0 时，F == 0xffffffff, F' = 0
+    // 又因为 ~0 == 0xffffffff, 所以 F == ~F'，那么只需要找 F 即可
+    // 为了规避掉一般值，当 x != 0 时，我们 !x 就可以得到 1
+    // 那么怎么 1 --> 0xffffffff 呢？
+    // 考虑 ~0，所以得到 F = ~(!x), 但是这个满足了 x != 0 的情况，当 x == 0 时， F == 0x11111110
+    // 这个时候考虑 F = ~(!x) + 1, x != 0 时候 F == 0，x == 0 时 F == 0xfffffff
+    // 虽然与期望的 F 相反，但是等于 F' 呀，它们时共轭的，调整一下就行了
+    // F & z + F' & y
+    return (((~(!x)) + 1) & z) + ((~((~(!x)) + 1)) & y);
 }
 /*
  * isLessOrEqual - if x <= y  then return 1, else return 0
@@ -227,7 +246,9 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-    return 2;
+    // 思路：x + (-(y+1)) < 0
+    // 注意：不要写 x + (~(y + 1) + 1) , y 如果是 INT_MAX, 在加 1 就溢出了导致错误
+    return !(((x + ((~(y)) + 1) + (~(0x00000001) + 1)) & 0x80000000) ^ 0x80000000);
 }
 // 4
 /*
@@ -239,7 +260,8 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4
  */
 int logicalNeg(int x) {
-    return 2;
+    // 0:54 卡住了，啊啊啊啊啊啊啊啊啊啊啊
+    return (x >> 31) + 1 + ((~x) >> 31);
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
