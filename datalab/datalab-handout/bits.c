@@ -152,8 +152,8 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-    return 2;
+    // 整数补码的最小值: 1000 0000 0000 0000 0000 0000 0000 0000
+    return 1 << 31;
 }
 // 2
 /*
