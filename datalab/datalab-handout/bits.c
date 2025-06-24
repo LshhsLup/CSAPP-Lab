@@ -177,7 +177,13 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-    return 2;
+    // 0 到 31 , 如果所有奇数位都为 1，返回 1
+    // 思路：
+    // 如果 x 为奇数位全为 1, 那么 x | 0101 0101 0101 0101 0101 0101 0101 0101 == 0xffffffff
+    // 所以只需要判断 x | 0x55555555 是否等于 0xffffffff
+    // a ^ b == 0, 那么 a == b
+    // a ^ b != 0, 那么 a != b
+    return !((x | 0x55555555) ^ 0xffffffff);
 }
 /*
  * negate - return -x
@@ -187,7 +193,8 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-    return 2;
+    // 思路：全部去反，然后末位加 1，之后变成的数与 -x 的补码
+    return ((~x) + 1);
 }
 // 3
 /*
