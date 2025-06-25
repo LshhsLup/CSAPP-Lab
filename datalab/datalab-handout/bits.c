@@ -261,7 +261,14 @@ int isLessOrEqual(int x, int y) {
  */
 int logicalNeg(int x) {
     // 0:54 卡住了，啊啊啊啊啊啊啊啊啊啊啊
-    return (x >> 31) + 1 + ((~x) >> 31);
+    // 8:59 更新
+    // 思路：x == 0, F = 1; x != 0, F = 0
+    // 令 F = 1 - X, x == 0, X == 0; x != 0, X == 1
+    // 考虑 x != 0 时，必有 x | -x 的最高位为 1
+    // 这时候若 x == 0, x | -x 还是 0
+    // 那我们就处理这个 x | -x 就行了, 把它的最高位提取出来
+    // 即 X == x | -x >> 31 & 1
+    return 1 - (((x | ((~x) + 1)) >> 31) & 1);
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
