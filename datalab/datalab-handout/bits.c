@@ -1,8 +1,8 @@
-/* 
- * CS:APP Data Lab 
- * 
+/*
+ * CS:APP Data Lab
+ *
  * <Please put your name and userid here>
- * 
+ *
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
  *
@@ -10,7 +10,7 @@
  * compiler. You can still use printf for debugging without including
  * <stdio.h>, although you might get a compiler warning. In general,
  * it's not good practice to ignore compiler warnings, but in this
- * case it's OK.  
+ * case it's OK.
  */
 
 #if 0
@@ -132,42 +132,43 @@ NOTES:
  *      the correct answers.
  */
 
-
 #endif
-//1
-/* 
- * bitXor - x^y using only ~ and & 
+// 1
+/*
+ * bitXor - x^y using only ~ and &
  *   Example: bitXor(4, 5) = 1
  *   Legal ops: ~ &
  *   Max ops: 14
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+    // 思路：x ^ y = (~x)&y | x&(~y)
+    return ((~x) & y) | (x & (~y));
 }
-/* 
- * tmin - return minimum two's complement integer 
+/*
+ * tmin - return minimum two's complement integer
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 4
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
-
+    // 整数补码的最小值: 1000 0000 0000 0000 0000 0000 0000 0000
+    return 1 << 31;
 }
-//2
+// 2
 /*
  * isTmax - returns 1 if x is the maximum, two's complement number,
- *     and 0 otherwise 
+ *     and 0 otherwise
  *   Legal ops: ! ~ & ^ | +
  *   Max ops: 10
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+    // 0111 1111 1111 1111 1111 1111 1111 1111 --> 1
+    // x ^ Tmax == 0, x ^ other == 1
+    return !(x ^ 0x7fffffff);
 }
-/* 
+/*
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
  *   where bits are numbered from 0 (least significant) to 31 (most significant)
  *   Examples allOddBits(0xFFFFFFFD) = 0, allOddBits(0xAAAAAAAA) = 1
@@ -176,20 +177,27 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+    // 0 到 31 , 如果所有奇数位都为 1，返回 1
+    // 思路：
+    // 如果 x 为奇数位全为 1, 那么 x | 0101 0101 0101 0101 0101 0101 0101 0101 == 0xffffffff
+    // 所以只需要判断 x | 0x55555555 是否等于 0xffffffff
+    // a ^ b == 0, 那么 a == b
+    // a ^ b != 0, 那么 a != b
+    return !((x | 0x55555555) ^ 0xffffffff);
 }
-/* 
- * negate - return -x 
+/*
+ * negate - return -x
  *   Example: negate(1) = -1.
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 5
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+    // 思路：全部取反，然后末位加 1，之后变成的数与 -x 的补码
+    return ((~x) + 1);
 }
-//3
-/* 
+// 3
+/*
  * isAsciiDigit - return 1 if 0x30 <= x <= 0x39 (ASCII codes for characters '0' to '9')
  *   Example: isAsciiDigit(0x35) = 1.
  *            isAsciiDigit(0x3a) = 0.
@@ -199,39 +207,68 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+    // 思路：0x0000003y, 其中 y ∈ [0,9] 时为 1
+    // 那么只需确定 x 前 28 为 0x00000030 并且后四位是 [0,9] 的范围
+    // x & 0x0000000f - 10，如果小于 0，那么确定第二个条件
+    // x & 0xfffffff0 得到前 28 位，如果等于 0x00000030，那么确定第一个条件
+    // - 10 可以用 +(-10), 判断小于 0 只需要判断第 31 位是否 1(即判断 & 0x80000000 是否等于 0x80000000)
+    // 条件 1 和 条件 2 同时确定返回 1
+    return (!((((x & 0x0000000f) + ((~0x0000000a) + 1)) & 0x80000000) ^ 0x80000000)) & (!((x & 0xfffffff0) ^ 0x00000030));
 }
-/* 
- * conditional - same as x ? y : z 
+/*
+ * conditional - same as x ? y : z
  *   Example: conditional(2,4,5) = 4
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 16
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+    // 思路：x == 0, 返回 z; x != 0, 返回 y
+    // 很容易想到 0 & y + 0xffffffff & z == z, 0 & z + 0xffffffff & y == y
+    // F & y + F' & z
+    // 也就是说我们希望找到一种属于 x 的表达式 F 和 F'，使 F,F' 满足：
+    // x == 0 时，F == 0, F' = 0xffffffff
+    // x != 0 时，F == 0xffffffff, F' = 0
+    // 又因为 ~0 == 0xffffffff, 所以 F == ~F'，那么只需要找 F 即可
+    // 为了规避掉一般值，当 x != 0 时，我们 !x 就可以得到 1
+    // 那么怎么 1 --> 0xffffffff 呢？
+    // 考虑 ~0，所以得到 F = ~(!x), 但是这个满足了 x != 0 的情况，当 x == 0 时， F == 0x11111110
+    // 这个时候考虑 F = ~(!x) + 1, x != 0 时候 F == 0，x == 0 时 F == 0xfffffff
+    // 虽然与期望的 F 相反，但是等于 F' 呀，它们时共轭的，调整一下就行了
+    // F & z + F' & y
+    return (((~(!x)) + 1) & z) + ((~((~(!x)) + 1)) & y);
 }
-/* 
- * isLessOrEqual - if x <= y  then return 1, else return 0 
+/*
+ * isLessOrEqual - if x <= y  then return 1, else return 0
  *   Example: isLessOrEqual(4,5) = 1.
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 24
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+    // 思路：x + (-(y+1)) < 0
+    // 注意：不要写 x + (~(y + 1) + 1) , y 如果是 INT_MAX, 在加 1 就溢出了导致错误
+    return !(((x + ((~(y)) + 1) + (~(0x00000001) + 1)) & 0x80000000) ^ 0x80000000);
 }
-//4
-/* 
- * logicalNeg - implement the ! operator, using all of 
+// 4
+/*
+ * logicalNeg - implement the ! operator, using all of
  *              the legal operators except !
  *   Examples: logicalNeg(3) = 0, logicalNeg(0) = 1
  *   Legal ops: ~ & ^ | + << >>
  *   Max ops: 12
- *   Rating: 4 
+ *   Rating: 4
  */
 int logicalNeg(int x) {
-  return 2;
+    // 0:54 卡住了，啊啊啊啊啊啊啊啊啊啊啊
+    // 8:59 更新
+    // 思路：x == 0, F = 1; x != 0, F = 0
+    // 令 F = 1 - X, x == 0, X == 0; x != 0, X == 1
+    // 考虑 x != 0 时，必有 x | -x 的最高位为 1
+    // 这时候若 x == 0, x | -x 还是 0
+    // 那我们就处理这个 x | -x 就行了, 把它的最高位提取出来
+    // 即 X == x | -x >> 31 & 1
+    return 1 - (((x | ((~x) + 1)) >> 31) & 1);
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -246,10 +283,10 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+    return 0;
 }
-//float
-/* 
+// float
+/*
  * floatScale2 - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
  *   Both the argument and result are passed as unsigned int's, but
@@ -261,9 +298,9 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+    return 2;
 }
-/* 
+/*
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
  *   for floating point argument f.
  *   Argument is passed as unsigned int, but
@@ -276,9 +313,9 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+    return 2;
 }
-/* 
+/*
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
  *   (2.0 raised to the power x) for any 32-bit integer x.
  *
@@ -286,9 +323,9 @@ int floatFloat2Int(unsigned uf) {
  *   representation as the single-precision floating-point number 2.0^x.
  *   If the result is too small to be represented as a denorm, return
  *   0. If too large, return +INF.
- * 
- *   Legal ops: Any integer/unsigned operations incl. ||, &&. Also if, while 
- *   Max ops: 30 
+ *
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. Also if, while
+ *   Max ops: 30
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
