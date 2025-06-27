@@ -352,7 +352,32 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-    return 2;
+    int sign = (uf >> 31) & 1; // 符号位
+    unsigned exponent = ((uf >> 23) & 0x000000ff); // 指数位
+    int fraction = (uf & 0x007fffff); // 尾数位
+    if(exponent == 0xff) { // NaN 或者 Infinity
+        return 0x80000000u; // 返回 0x80000000u
+    }
+    if(exponent < 127) { // 小于 127，表示小于 1
+        return 0; // 返回 0
+    }   
+    // 计算偏移量
+    int offset = exponent - 127; // 偏移量
+    if(offset >= 31) { // 如果偏移量大于等于 31，表示溢出
+        return 0x80000000u; // 返回 0x80000000u
+    }
+    // 计算整数部分
+    // 1.xxx * 2^(exponent - 127)
+    // 其中 xxx 是尾数部分，1 是隐含的 1
+    // 变成 int 就要舍去小数部分.xxx
+    // 比如 1.101 * 2^2 = (1 + 0.5 + 0.125) * 2^2 = (1.625) * 4 = 6.5, 变成 int 就是 6
+    // 也就是把 1.101 左移 2 位，得到 110.1
+    // 这时候只需要右移 23 - offset 位就可以得到整数部分
+    int result = (fraction | 0x00800000) >> (23 - offset); // 尾数加上隐含的 1，然后右移偏移量
+    if(sign) { // 如果是负数
+        result = -result; // 取反
+    }
+    return result;
 }
 /*
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
