@@ -262,7 +262,7 @@ int isLessOrEqual(int x, int y) {
     // 2. x 和 y 符号位不同
     //    a. x 是负数，y 是正数，x <= y 一定成立
     //    b. x 是正数，y 是负数，x <= y 一定不成立
-    return (sign_x & (!sign_y)) | (!(sign_x ^ sign_y) & ((diff >> 31) | !diff));
+    return (sign_x & (!sign_y)) | (!(sign_x ^ sign_y) & (((diff >> 31) & 1) | !diff));
 }
 // 4
 /*
@@ -297,7 +297,32 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-    return 0;
+    // 思路：统一转换为正数实现
+    // ans = 1 + log2(x) x > 0
+    // ans = 1 + log2(~x) x < 0
+    // log2(x) 指的是 x 的二进制表示中最高位的下标
+    // 例如 12 的二进制表示为 1100, 最高位下标为 4, log2(12) = 4
+    // 使用二分法实现 log2(x)
+    int is_negative = x >> 31; // x 为负数，is_negative = -1(0xffffffff); 否则为 0
+    // 将 x 变为正数, 同时保证 x 为正数的时候不变
+    x = x ^ is_negative; // 如果 x 为负数，x = -x; 否则 x 不变
+    int bit_count = 0; // 记录需要的位数
+    int check16 = (!!(x >> 16)) << 4; // 检查高 16 位是否有 1
+    bit_count += check16; // 如果有 1, 位数加 16
+    x = x >> check16; // 如果有 1, 则将 x 右移 16 位，否则 x 不变
+    int check8 = (!!(x >> 8)) << 3; // 检查高 8 位是否有 1
+    bit_count += check8; // 如果有 1, 位数加 8
+    x = x >> check8; // 如果有 1, 则将 x 右移 8 位，否则 x 不变
+    int check4 = (!!(x >> 4)) << 2; // 检查高 4 位是否有 1
+    bit_count += check4; // 如果有 1, 位数加 4
+    x = x >> check4; // 如果有 1, 则将 x 右移 4 位，否则 x 不变
+    int check2 = (!!(x >> 2)) << 1; // 检查高 2 位是否有 1
+    bit_count += check2; // 如果有 1, 位数加 2
+    x = x >> check2; // 如果有 1, 则将 x 右移 2 位，否则 x 不变
+    int check1 = (!!(x >> 1)); // 检查高 1 位是否有 1
+    bit_count += check1; // 如果有 1, 位数加 1
+    x = x >> check1; // 如果有 1, 则将 x 右移 1 位，否则 x 不变
+    return bit_count + 1 + x;
 }
 // float
 /*
