@@ -410,6 +410,17 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-
-    return 2;
+    // sign exponent fraction
+    // 2.0 --> (float) 0 10000000 00000000000000000000000
+    // 2.0 ^ x > 0
+    // // 0.5 --> (float) 0 01111110 00000000000000000000000
+    // // 1111 1111 1111 1111 1111 1111 1000 0010
+    if (x > 127) {
+        return 0x7f800000;
+    }
+    if (x < -126) {
+        return 0;
+    }
+    unsigned exponent = 127 + x;
+    return (0 | (exponent << 23));
 }
