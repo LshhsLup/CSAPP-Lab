@@ -250,13 +250,13 @@ int isLessOrEqual(int x, int y) {
     // 注意：不要写 x + (~(y + 1) + 1) , y 如果是 INT_MAX, 在加 1 就溢出了导致错误
     // return !(((x + (~(0x00000001) + 1) + ((~(y)) + 1) ) & 0x80000000) ^ 0x80000000);
     // update:
-    // 上面那样写有问题：INT_MIN - INT_MAX 会出错 
+    // 上面那样写有问题：INT_MIN - INT_MAX 会出错
     // 不能通过相减得到的符号位是否 1 或者相减之后为 0 判断
     // 0x80000000 + (-0x7fffffff) 因为符号位溢出变为 0 了
     // 所以不能直接通过相减得到的符号位是否 1 判断
     int sign_x = (x >> 31) & 1; // x 的符号位
     int sign_y = (y >> 31) & 1; // y 的符号位
-    int diff = x + (~y + 1); // x - y
+    int diff = x + (~y + 1);    // x - y
     // 1. x 和 y 符号位相同
     //    判断 x - y 的符号位是否为 1 并且 是否 x - y == 0
     // 2. x 和 y 符号位不同
@@ -305,23 +305,23 @@ int howManyBits(int x) {
     // 使用二分法实现 log2(x)
     int is_negative = x >> 31; // x 为负数，is_negative = -1(0xffffffff); 否则为 0
     // 将 x 变为正数, 同时保证 x 为正数的时候不变
-    x = x ^ is_negative; // 如果 x 为负数，x = -x; 否则 x 不变
-    int bit_count = 0; // 记录需要的位数
+    x = x ^ is_negative;              // 如果 x 为负数，x = -x; 否则 x 不变
+    int bit_count = 0;                // 记录需要的位数
     int check16 = (!!(x >> 16)) << 4; // 检查高 16 位是否有 1
-    bit_count += check16; // 如果有 1, 位数加 16
-    x = x >> check16; // 如果有 1, 则将 x 右移 16 位，否则 x 不变
-    int check8 = (!!(x >> 8)) << 3; // 检查高 8 位是否有 1
-    bit_count += check8; // 如果有 1, 位数加 8
-    x = x >> check8; // 如果有 1, 则将 x 右移 8 位，否则 x 不变
-    int check4 = (!!(x >> 4)) << 2; // 检查高 4 位是否有 1
-    bit_count += check4; // 如果有 1, 位数加 4
-    x = x >> check4; // 如果有 1, 则将 x 右移 4 位，否则 x 不变
-    int check2 = (!!(x >> 2)) << 1; // 检查高 2 位是否有 1
-    bit_count += check2; // 如果有 1, 位数加 2
-    x = x >> check2; // 如果有 1, 则将 x 右移 2 位，否则 x 不变
-    int check1 = (!!(x >> 1)); // 检查高 1 位是否有 1
-    bit_count += check1; // 如果有 1, 位数加 1
-    x = x >> check1; // 如果有 1, 则将 x 右移 1 位，否则 x 不变
+    bit_count += check16;             // 如果有 1, 位数加 16
+    x = x >> check16;                 // 如果有 1, 则将 x 右移 16 位，否则 x 不变
+    int check8 = (!!(x >> 8)) << 3;   // 检查高 8 位是否有 1
+    bit_count += check8;              // 如果有 1, 位数加 8
+    x = x >> check8;                  // 如果有 1, 则将 x 右移 8 位，否则 x 不变
+    int check4 = (!!(x >> 4)) << 2;   // 检查高 4 位是否有 1
+    bit_count += check4;              // 如果有 1, 位数加 4
+    x = x >> check4;                  // 如果有 1, 则将 x 右移 4 位，否则 x 不变
+    int check2 = (!!(x >> 2)) << 1;   // 检查高 2 位是否有 1
+    bit_count += check2;              // 如果有 1, 位数加 2
+    x = x >> check2;                  // 如果有 1, 则将 x 右移 2 位，否则 x 不变
+    int check1 = (!!(x >> 1));        // 检查高 1 位是否有 1
+    bit_count += check1;              // 如果有 1, 位数加 1
+    x = x >> check1;                  // 如果有 1, 则将 x 右移 1 位，否则 x 不变
     return bit_count + 1 + x;
 }
 // float
@@ -337,7 +337,24 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-    return 2;
+    int sign = (uf >> 31) & 1;                   // 符号位
+    unsigned exponent = (uf >> 23) & 0x000000ff; // 指数位
+    unsigned fraction = uf & 0x007fffff;         // 尾数位
+    if (exponent == 0x000000ff) {
+        // uf 是 NaN
+        return uf;
+    }
+    if (exponent == 0) {
+        // 非规格化，0.f * 2 ^ -126
+        return ((0 | sign) << 31) | (fraction << 1);
+    }
+    // uf * 2 == (E + 1)
+    exponent += 1;
+    unsigned ans = 0;
+    ans = (ans | sign) << 31;
+    ans = ((0 | exponent) << 23) | ans;
+    ans = ((0 | fraction) | ans);
+    return ans;
 }
 /*
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -352,19 +369,19 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-    int sign = (uf >> 31) & 1; // 符号位
+    int sign = (uf >> 31) & 1;                     // 符号位
     unsigned exponent = ((uf >> 23) & 0x000000ff); // 指数位
-    int fraction = (uf & 0x007fffff); // 尾数位
-    if(exponent == 0xff) { // NaN 或者 Infinity
-        return 0x80000000u; // 返回 0x80000000u
+    int fraction = (uf & 0x007fffff);              // 尾数位
+    if (exponent == 0xff) {                        // NaN 或者 Infinity
+        return 0x80000000u;                        // 返回 0x80000000u
     }
-    if(exponent < 127) { // 小于 127，表示小于 1
-        return 0; // 返回 0
-    }   
+    if (exponent < 127) { // 小于 127，表示小于 1
+        return 0;         // 返回 0
+    }
     // 计算偏移量
     int offset = exponent - 127; // 偏移量
-    if(offset >= 31) { // 如果偏移量大于等于 31，表示溢出
-        return 0x80000000u; // 返回 0x80000000u
+    if (offset >= 31) {          // 如果偏移量大于等于 31，表示溢出
+        return 0x80000000u;      // 返回 0x80000000u
     }
     // 计算整数部分
     // 1.xxx * 2^(exponent - 127)
@@ -374,8 +391,8 @@ int floatFloat2Int(unsigned uf) {
     // 也就是把 1.101 左移 2 位，得到 110.1
     // 这时候只需要右移 23 - offset 位就可以得到整数部分
     int result = (fraction | 0x00800000) >> (23 - offset); // 尾数加上隐含的 1，然后右移偏移量
-    if(sign) { // 如果是负数
-        result = -result; // 取反
+    if (sign) {                                            // 如果是负数
+        result = -result;                                  // 取反
     }
     return result;
 }
@@ -393,5 +410,6 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
+
     return 2;
 }
