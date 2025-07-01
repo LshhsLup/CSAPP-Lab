@@ -169,7 +169,11 @@ int tmin(void) {
 int isTmax(int x) {
     // 0111 1111 1111 1111 1111 1111 1111 1111 --> 1
     // x ^ Tmax == 0, x ^ other == 1
-    return !(x ^ 0x7fffffff);
+    // return !(x ^ 0x7fffffff);
+    // 不允许使用 0x7fffffff, (only 0x0 - 0xff allowed)
+    // x + 1 == 100000 0000 0000 0000 0000 0000 0000 0000 = ~x
+    // 注意 x + 1 == 0 时，x == -1, 也就是 ~0
+    return !((x + 1) ^ (~x)) & !!(x + 1); 
 }
 /*
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
