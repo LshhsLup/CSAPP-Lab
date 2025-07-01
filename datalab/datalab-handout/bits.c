@@ -173,7 +173,7 @@ int isTmax(int x) {
     // 不允许使用 0x7fffffff, (only 0x0 - 0xff allowed)
     // x + 1 == 100000 0000 0000 0000 0000 0000 0000 0000 = ~x
     // 注意 x + 1 == 0 时，x == -1, 也就是 ~0
-    return !((x + 1) ^ (~x)) & !!(x + 1); 
+    return !((x + 1) ^ (~x)) & !!(x + 1);
 }
 /*
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -194,7 +194,7 @@ int allOddBits(int x) {
     // update:
     // 不允许使用 0x55555555, (only 0x0 - 0xff allowed)
     // x & 0xaaaaaaaa == 0xaaaaaaaa
-    int x_mask = ((0xaa << 24) | (0xaa << 16) | (0xaa << 8) | 0xaa); 
+    int x_mask = ((0xaa << 24) | (0xaa << 16) | (0xaa << 8) | 0xaa);
     return !((x & x_mask) ^ x_mask);
 }
 /*
@@ -225,7 +225,12 @@ int isAsciiDigit(int x) {
     // x & 0xfffffff0 得到前 28 位，如果等于 0x00000030，那么确定第一个条件
     // - 10 可以用 +(-10), 判断小于 0 只需要判断第 31 位是否 1(即判断 & 0x80000000 是否等于 0x80000000)
     // 条件 1 和 条件 2 同时确定返回 1
-    return (!((((x & 0x0000000f) + ((~0x0000000a) + 1)) & 0x80000000) ^ 0x80000000)) & (!((x & 0xfffffff0) ^ 0x00000030));
+    // return (!((((x & 0x0000000f) + ((~0x0000000a) + 1)) & 0x80000000) ^ 0x80000000)) & (!((x & 0xfffffff0) ^ 0x00000030));
+    // update:
+    // Illegal constant (0x80000000) (only 0x0 - 0xff allowed)
+    int mask1 = 1 << 31;
+    int mask2 = ~0xf;
+    return (!((((x & 0xf) + ((~0xa) + 1)) & mask1) ^ mask1)) & (!((x & mask2) ^ 0x30));
 }
 /*
  * conditional - same as x ? y : z
@@ -294,7 +299,10 @@ int logicalNeg(int x) {
     // 这时候若 x == 0, x | -x 还是 0
     // 那我们就处理这个 x | -x 就行了, 把它的最高位提取出来
     // 即 X == x | -x >> 31 & 1
-    return 1 - (((x | ((~x) + 1)) >> 31) & 1);
+    // return 1 - (((x | ((~x) + 1)) >> 31) & 1);
+    // update:
+    // Illegal operator (-)
+    return 1 + ((~(((x | ((~x) + 1)) >> 31) & 1)) + 1);
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -315,26 +323,23 @@ int howManyBits(int x) {
     // log2(x) 指的是 x 的二进制表示中最高位的下标
     // 例如 12 的二进制表示为 1100, 最高位下标为 4, log2(12) = 4
     // 使用二分法实现 log2(x)
+    // ===================== update: ============================
+    // 变量名不合格
+    int b16, b8, b4, b2, b1;   // 记录需要的位数
     int is_negative = x >> 31; // x 为负数，is_negative = -1(0xffffffff); 否则为 0
     // 将 x 变为正数, 同时保证 x 为正数的时候不变
-    x = x ^ is_negative;              // 如果 x 为负数，x = -x; 否则 x 不变
-    int bit_count = 0;                // 记录需要的位数
-    int check16 = (!!(x >> 16)) << 4; // 检查高 16 位是否有 1
-    bit_count += check16;             // 如果有 1, 位数加 16
-    x = x >> check16;                 // 如果有 1, 则将 x 右移 16 位，否则 x 不变
-    int check8 = (!!(x >> 8)) << 3;   // 检查高 8 位是否有 1
-    bit_count += check8;              // 如果有 1, 位数加 8
-    x = x >> check8;                  // 如果有 1, 则将 x 右移 8 位，否则 x 不变
-    int check4 = (!!(x >> 4)) << 2;   // 检查高 4 位是否有 1
-    bit_count += check4;              // 如果有 1, 位数加 4
-    x = x >> check4;                  // 如果有 1, 则将 x 右移 4 位，否则 x 不变
-    int check2 = (!!(x >> 2)) << 1;   // 检查高 2 位是否有 1
-    bit_count += check2;              // 如果有 1, 位数加 2
-    x = x >> check2;                  // 如果有 1, 则将 x 右移 2 位，否则 x 不变
-    int check1 = (!!(x >> 1));        // 检查高 1 位是否有 1
-    bit_count += check1;              // 如果有 1, 位数加 1
-    x = x >> check1;                  // 如果有 1, 则将 x 右移 1 位，否则 x 不变
-    return bit_count + 1 + x;
+    x = x ^ is_negative;      // 如果 x 为负数，x = -x; 否则 x 不变
+    b16 = (!!(x >> 16)) << 4; // 检查高 16 位是否有 1
+    x = x >> b16;             // 如果有 1, 则将 x 右移 16 位，否则 x 不变
+    b8 = (!!(x >> 8)) << 3;   // 检查高 8 位是否有 1
+    x = x >> b8;              // 如果有 1, 则将 x 右移 8 位，否则 x 不变
+    b4 = (!!(x >> 4)) << 2;   // 检查高 4 位是否有 1
+    x = x >> b4;              // 如果有 1, 则将 x 右移 4 位，否则 x 不变
+    b2 = (!!(x >> 2)) << 1;   // 检查高 2 位是否有 1
+    x = x >> b2;              // 如果有 1, 则将 x 右移 2 位，否则 x 不变
+    b1 = (!!(x >> 1));        // 检查高 1 位是否有 1
+    x = x >> b1;              // 如果有 1, 则将 x 右移 1 位，否则 x 不变
+    return b1 + b2 + b4 + b8 + b16 + 1 + x;
 }
 // float
 /*
@@ -349,6 +354,7 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
+    unsigned ans = 0;
     int sign = (uf >> 31) & 1;                   // 符号位
     unsigned exponent = (uf >> 23) & 0x000000ff; // 指数位
     unsigned fraction = uf & 0x007fffff;         // 尾数位
@@ -362,7 +368,6 @@ unsigned floatScale2(unsigned uf) {
     }
     // uf * 2 == (E + 1)
     exponent += 1;
-    unsigned ans = 0;
     ans = (ans | sign) << 31;
     ans = ((0 | exponent) << 23) | ans;
     ans = ((0 | fraction) | ans);
@@ -381,8 +386,10 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
+    int result;
     int sign = (uf >> 31) & 1;                     // 符号位
     unsigned exponent = ((uf >> 23) & 0x000000ff); // 指数位
+    int offset = exponent - 127;                   // 偏移量
     int fraction = (uf & 0x007fffff);              // 尾数位
     if (exponent == 0xff) {                        // NaN 或者 Infinity
         return 0x80000000u;                        // 返回 0x80000000u
@@ -391,9 +398,8 @@ int floatFloat2Int(unsigned uf) {
         return 0;         // 返回 0
     }
     // 计算偏移量
-    int offset = exponent - 127; // 偏移量
-    if (offset >= 31) {          // 如果偏移量大于等于 31，表示溢出
-        return 0x80000000u;      // 返回 0x80000000u
+    if (offset >= 31) {     // 如果偏移量大于等于 31，表示溢出
+        return 0x80000000u; // 返回 0x80000000u
     }
     // 计算整数部分
     // 1.xxx * 2^(exponent - 127)
@@ -402,9 +408,9 @@ int floatFloat2Int(unsigned uf) {
     // 比如 1.101 * 2^2 = (1 + 0.5 + 0.125) * 2^2 = (1.625) * 4 = 6.5, 变成 int 就是 6
     // 也就是把 1.101 左移 2 位，得到 110.1
     // 这时候只需要右移 23 - offset 位就可以得到整数部分
-    int result = (fraction | 0x00800000) >> (23 - offset); // 尾数加上隐含的 1，然后右移偏移量
-    if (sign) {                                            // 如果是负数
-        result = -result;                                  // 取反
+    result = (fraction | 0x00800000) >> (23 - offset); // 尾数加上隐含的 1，然后右移偏移量
+    if (sign) {                                        // 如果是负数
+        result = -result;                              // 取反
     }
     return result;
 }
@@ -427,12 +433,12 @@ unsigned floatPower2(int x) {
     // 2.0 ^ x > 0
     // // 0.5 --> (float) 0 01111110 00000000000000000000000
     // // 1111 1111 1111 1111 1111 1111 1000 0010
+    unsigned exponent = 127 + x;
     if (x > 127) {
         return 0x7f800000;
     }
     if (x < -126) {
         return 0;
     }
-    unsigned exponent = 127 + x;
     return (0 | (exponent << 23));
 }
