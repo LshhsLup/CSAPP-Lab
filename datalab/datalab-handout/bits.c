@@ -190,7 +190,12 @@ int allOddBits(int x) {
     // 所以只需要判断 x | 0x55555555 是否等于 0xffffffff
     // a ^ b == 0, 那么 a == b
     // a ^ b != 0, 那么 a != b
-    return !((x | 0x55555555) ^ 0xffffffff);
+    // return !((x | 0x55555555) ^ 0xffffffff);
+    // update:
+    // 不允许使用 0x55555555, (only 0x0 - 0xff allowed)
+    // x & 0xaaaaaaaa == 0xaaaaaaaa
+    int x_mask = ((0xaa << 24) | (0xaa << 16) | (0xaa << 8) | 0xaa); 
+    return !((x & x_mask) ^ x_mask);
 }
 /*
  * negate - return -x
